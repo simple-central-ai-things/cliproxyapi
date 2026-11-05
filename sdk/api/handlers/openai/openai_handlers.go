@@ -82,7 +82,23 @@ func (h *OpenAIAPIHandler) OpenAIModels(c *gin.Context) {
 	// Get all available models
 	allModels := h.Models()
 
-	// Filter to only include the 4 required fields: id, object, created, owned_by
+	// capabilityFields are the registry-computed model capability fields that are
+	// safe to surface alongside the base fields. Exposing these (instead of
+	// dropping them) lets downstream consumers tier models by context window and
+	// mark vision/reasoning support without changing the model id or auth behavior.
+	capabilityFields := []string{
+		"context_length",
+		"max_context_length",
+		"max_completion_tokens",
+		"supported_parameters",
+		"supported_input_modalities",
+		"supported_output_modalities",
+		"vision",
+		"reasoning",
+	}
+
+	// Filter to the base fields (id, object, created, owned_by) plus any
+	// capability metadata the registry computed for the model.
 	filteredModels := make([]map[string]any, len(allModels))
 	for i, model := range allModels {
 		filteredModel := map[string]any{
@@ -98,6 +114,13 @@ func (h *OpenAIAPIHandler) OpenAIModels(c *gin.Context) {
 		// Add owned_by field if it exists
 		if ownedBy, exists := model["owned_by"]; exists {
 			filteredModel["owned_by"] = ownedBy
+		}
+
+		// Add capability fields if the registry computed them
+		for _, field := range capabilityFields {
+			if value, exists := model[field]; exists {
+				filteredModel[field] = value
+			}
 		}
 
 		filteredModels[i] = filteredModel
