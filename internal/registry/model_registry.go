@@ -1902,6 +1902,18 @@ func (r *ModelRegistry) convertModelToMap(model *ModelInfo, handlerType string) 
 		if len(model.SupportedParameters) > 0 {
 			result["supported_parameters"] = append([]string(nil), model.SupportedParameters...)
 		}
+		if len(model.SupportedInputModalities) > 0 {
+			result["supported_input_modalities"] = append([]string(nil), model.SupportedInputModalities...)
+		}
+		if len(model.SupportedOutputModalities) > 0 {
+			result["supported_output_modalities"] = append([]string(nil), model.SupportedOutputModalities...)
+		}
+		if modelSupportsVision(model) {
+			result["vision"] = true
+		}
+		if model.Thinking != nil {
+			result["reasoning"] = true
+		}
 		return result
 
 	case "claude":
@@ -1989,6 +2001,21 @@ func (r *ModelRegistry) convertModelToMap(model *ModelInfo, handlerType string) 
 		}
 		return result
 	}
+}
+
+// modelSupportsVision reports whether the model accepts image input, derived
+// from its declared input modalities. This lets provider plugins that set
+// SupportedInputModalities surface a vision marker in OpenAI model listings.
+func modelSupportsVision(model *ModelInfo) bool {
+	if model == nil {
+		return false
+	}
+	for _, modality := range model.SupportedInputModalities {
+		if strings.EqualFold(strings.TrimSpace(modality), "image") {
+			return true
+		}
+	}
+	return false
 }
 
 // CleanupExpiredQuotas removes expired quota tracking entries
