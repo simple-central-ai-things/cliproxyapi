@@ -153,7 +153,7 @@ see [MANAGEMENT_API.md](https://help.router-for.me/management/api)
 
 ## Usage Statistics
 
-Since v6.10.0, CLIProxyAPI and [CPAMC](https://github.com/router-for-me/Cli-Proxy-API-Management-Center) no longer ship built-in usage statistics. If you need usage statistics, use:
+Since v6.10.0, CLIProxyAPI and [CPAMC](https://github.com/simple-central-ai-things/cliproxyapi-management-center) no longer ship built-in usage statistics. If you need usage statistics, use:
 
 ### [CPA Usage Keeper](https://github.com/Willxup/cpa-usage-keeper)
 

@@ -146,7 +146,7 @@ CLIProxyAPIガイド：[https://help.router-for.me/](https://help.router-for.me/
 
 ## 使用量統計
 
-v6.10.0以降、CLIProxyAPIおよび [CPAMC](https://github.com/router-for-me/Cli-Proxy-API-Management-Center) プロジェクトには使用量統計機能がプリセットされなくなりました。使用量統計が必要な場合は、次のプロジェクトをご利用ください：
+v6.10.0以降、CLIProxyAPIおよび [CPAMC](https://github.com/simple-central-ai-things/cliproxyapi-management-center) プロジェクトには使用量統計機能がプリセットされなくなりました。使用量統計が必要な場合は、次のプロジェクトをご利用ください：
 
 ### [CPA Usage Keeper](https://github.com/Willxup/cpa-usage-keeper)
 

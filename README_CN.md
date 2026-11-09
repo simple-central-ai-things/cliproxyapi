@@ -147,7 +147,7 @@ CLIProxyAPI 用户手册： [https://help.router-for.me/](https://help.router-fo
 
 ## 使用量统计
 
-自v6.10.0版本以后，CLIProxyAPI及 [CPAMC](https://github.com/router-for-me/Cli-Proxy-API-Management-Center) 项目不再预置数据统计功能，如果有数据统计需求的请使用以下项目：
+自v6.10.0版本以后，CLIProxyAPI及 [CPAMC](https://github.com/simple-central-ai-things/cliproxyapi-management-center) 项目不再预置数据统计功能，如果有数据统计需求的请使用以下项目：
 
 ### [CPA Usage Keeper](https://github.com/Willxup/cpa-usage-keeper)
 
