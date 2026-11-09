@@ -1,4 +1,4 @@
-# CLI Proxy API
+# cliproxyapi
 
 [English](README.md) | 中文 | [日本語](README_JA.md)
 
