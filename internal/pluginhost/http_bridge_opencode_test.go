@@ -6,7 +6,6 @@ import (
 	"strings"
 	"testing"
 
-	coreauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/pluginapi"
 )
 
@@ -63,63 +62,32 @@ func TestOpencodeFingerprintRoundTripperSelectsTransport(t *testing.T) {
 	}
 }
 
-func TestHostHTTPClientUsesOpencodeFingerprint(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name   string
-		client *hostHTTPClient
-		want   bool
-	}{
-		{
-			name:   "opencode plugin provider",
-			client: &hostHTTPClient{provider: "opencode-go"},
-			want:   true,
-		},
-		{
-			name:   "auth provider fallback",
-			client: &hostHTTPClient{auth: &coreauth.Auth{Provider: "opencode"}},
-			want:   true,
-		},
-		{
-			name:   "other plugin provider",
-			client: &hostHTTPClient{provider: "commandcode"},
-			want:   false,
-		},
-		{
-			name:   "no provider information",
-			client: &hostHTTPClient{},
-			want:   false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.client.usesOpencodeFingerprint(); got != tt.want {
-				t.Fatalf("usesOpencodeFingerprint() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
+// TestHostHTTPClientInstallsOpencodeFingerprintTransport proves the bridge
+// installs the host-gated fingerprint transport based on the request
+// DESTINATION (opencode.ai), not the provider name — the generic host.http.do
+// path has no provider context yet must still fingerprint opencode.ai.
 func TestHostHTTPClientInstallsOpencodeFingerprintTransport(t *testing.T) {
 	t.Parallel()
 
 	for _, tt := range []struct {
 		name     string
 		provider string
+		url      string
 		want     bool
 	}{
-		{name: "opencode provider installs the fingerprint transport", provider: "opencode-go", want: true},
-		{name: "other provider keeps the bridge transport", provider: "commandcode", want: false},
+		{name: "opencode provider to opencode.ai installs the fingerprint", provider: "opencode-go", url: "https://opencode.ai/zen/v1/models", want: true},
+		{name: "no provider context to opencode.ai installs the fingerprint", provider: "", url: "https://opencode.ai/inference/openai/v1/chat/completions", want: true},
+		{name: "other provider to a non-opencode host keeps the bridge transport", provider: "commandcode", url: "https://api.commandcode.ai/provider/v1/models", want: false},
+		{name: "opencode provider to a non-opencode host keeps the bridge transport", provider: "opencode-go", url: "https://api.anthropic.com/v1/messages", want: false},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			hostClient := New().newHTTPClientWithProxy(nil, "", tt.provider).(*hostHTTPClient)
-			httpReq, errRequest := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://opencode.ai/zen/v1/models", nil)
+			httpReq, errRequest := http.NewRequestWithContext(t.Context(), http.MethodGet, tt.url, nil)
 			if errRequest != nil {
 				t.Fatal(errRequest)
 			}
 			client, cleanup, errClient := hostClient.newHTTPClientForRequest(t.Context(), nil, pluginapi.HTTPRequest{
-				URL: "https://opencode.ai/zen/v1/models",
+				URL: tt.url,
 			}, httpReq)
 			if errClient != nil {
 				t.Fatalf("newHTTPClientForRequest error = %v", errClient)

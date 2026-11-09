@@ -222,7 +222,7 @@ func (c *hostHTTPClient) newHTTPClientForRequest(ctx context.Context, cfg *confi
 			client = &http.Client{}
 		}
 		installPluginRedirectPolicy(client)
-		c.installOpencodeFingerprint(cfg, client)
+		c.installOpencodeFingerprint(cfg, client, httpReq.URL.Hostname())
 		return client, nil, nil
 	}
 
@@ -520,7 +520,7 @@ func (c *hostHTTPClient) newHTTPClientForRequest(ctx context.Context, cfg *confi
 		},
 	}
 
-	c.installOpencodeFingerprint(cfg, client)
+	c.installOpencodeFingerprint(cfg, client, httpReq.URL.Hostname())
 
 	return client, cleanup, nil
 }
@@ -541,26 +541,6 @@ func (rt *opencodeFingerprintRoundTripper) RoundTrip(req *http.Request) (*http.R
 	return rt.base.RoundTrip(req)
 }
 
-// usesOpencodeFingerprint reports whether this bridge client should present the
-// OpenCode TLS fingerprint. opencode.ai gates its free-tier inference by TLS
-// fingerprint, so the opencode provider's inference plane must speak the
-// captured ClientHello instead of plain crypto/tls.
-func (c *hostHTTPClient) usesOpencodeFingerprint() bool {
-	if c == nil {
-		return false
-	}
-	providers := []string{c.provider}
-	if c.auth != nil {
-		providers = append(providers, c.auth.Provider)
-	}
-	for _, provider := range providers {
-		if strings.Contains(strings.ToLower(provider), "opencode") {
-			return true
-		}
-	}
-	return false
-}
-
 // proxyURLForTransport resolves the proxy the OpenCode transport dials through,
 // with the same priority as the wire-profile branch: request override, then
 // auth proxy, then config proxy.
@@ -578,12 +558,16 @@ func (c *hostHTTPClient) proxyURLForTransport(cfg *config.Config) string {
 	return proxyStr
 }
 
-// installOpencodeFingerprint wraps client's transport so requests to opencode.ai
-// (and subdomains) carry the OpenCode TLS fingerprint while all other requests
-// keep the bridge's transport. The cached uTLS transport itself falls back to
-// plain TLS for non-opencode hosts, so the wrapper is safe to install broadly.
-func (c *hostHTTPClient) installOpencodeFingerprint(cfg *config.Config, client *http.Client) {
-	if client == nil || !c.usesOpencodeFingerprint() {
+// installOpencodeFingerprint wraps client's transport so requests bound for
+// opencode.ai (and subdomains) carry the OpenCode TLS fingerprint while all
+// other requests keep the bridge's transport. Gating on the request destination
+// host — rather than the provider name — is what matters here: the generic
+// host.http.do path builds the client with no provider context yet still serves
+// opencode.ai inference, so a provider-name gate would miss it. The
+// opencodeFingerprintRoundTripper re-checks the host per request as a
+// redirect-safe backstop.
+func (c *hostHTTPClient) installOpencodeFingerprint(cfg *config.Config, client *http.Client, destHost string) {
+	if client == nil || !helps.IsOpencodeUpstreamHost(destHost) {
 		return
 	}
 	base := client.Transport
